@@ -1,6 +1,3 @@
-// 两次输入密码是否一致
-
-// 表字段是否唯一
 import {
   registerDecorator,
   ValidationArguments,
@@ -8,13 +5,20 @@ import {
 } from 'class-validator';
 import { PrismaClient } from '@prisma/client';
 
-export function IsNotExistsRule(
+/**
+ * 验证已经存在
+ * @param {string} table
+ * @param {ValidationOptions} validationOptions
+ * @return {(object: Record<string, any>, propertyName: string) => void}
+ * @constructor
+ */
+export function IsExistsRule(
   table: string,
   validationOptions?: ValidationOptions,
 ) {
   return function (object: Record<string, any>, propertyName: string) {
     registerDecorator({
-      name: 'isNotExistsRule',
+      name: 'isExistsRule',
       target: object.constructor,
       propertyName: propertyName,
       constraints: [table],
@@ -28,7 +32,7 @@ export function IsNotExistsRule(
             },
           });
 
-          return !Boolean(result);
+          return Boolean(result);
         },
       },
     });

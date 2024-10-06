@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { hash } from 'argon2';
+import { hash, verify } from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -14,27 +14,25 @@ export class AuthService {
 
     private readonly jwt: JwtService,
   ) {}
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
-  }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  /**
+   * 用户登录
+   * @param {LoginDto} loginBody
+   * @return {Promise<{token: string}>}
+   */
+  public async login(loginBody: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { name: loginBody.name },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    // 校验密码是否正确
+    const isUserFound = verify(user?.password, loginBody.password);
+    if (!isUserFound) {
+      throw new HttpException('用户名或密码错误', HttpStatus.BAD_REQUEST);
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+    return this.token(user);
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
-  }
-
-  public login(loginBody: LoginDto) {}
 
   public async register(body: RegisterDto) {
     const userData = await this.prisma.user.create({
